@@ -1,12 +1,9 @@
 import '@/lib/errorReporter';
 import { enableMapSet } from "immer";
 enableMapSet();
-import { StrictMode } from 'react'
+import React, { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
-import {
-  createBrowserRouter,
-  RouterProvider,
-} from "react-router-dom";
+import { createBrowserRouter, RouterProvider } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { RouteErrorBoundary } from '@/components/RouteErrorBoundary';
@@ -18,7 +15,14 @@ import { ArticlePage } from '@/pages/ArticlePage'
 import { ServicesPage } from '@/pages/ServicesPage'
 import { PricingPage } from '@/pages/PricingPage'
 import { DashboardPage } from '@/pages/DashboardPage'
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      retry: 1,
+      refetchOnWindowFocus: false,
+    },
+  },
+});
 const router = createBrowserRouter([
   {
     path: "/",
@@ -34,12 +38,16 @@ const router = createBrowserRouter([
     ]
   },
 ]);
-createRoot(document.getElementById('root')!).render(
-  <StrictMode>
-    <QueryClientProvider client={queryClient}>
-      <ErrorBoundary>
-        <RouterProvider router={router} />
-      </ErrorBoundary>
-    </QueryClientProvider>
-  </StrictMode>,
-)
+const rootElement = document.getElementById('root');
+if (rootElement && !rootElement.dataset.root) {
+  rootElement.dataset.root = 'true';
+  createRoot(rootElement).render(
+    <StrictMode>
+      <QueryClientProvider client={queryClient}>
+        <ErrorBoundary>
+          <RouterProvider router={router} />
+        </ErrorBoundary>
+      </QueryClientProvider>
+    </StrictMode>,
+  );
+}

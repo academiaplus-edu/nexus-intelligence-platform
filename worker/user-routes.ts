@@ -1,75 +1,49 @@
 import { Hono } from "hono";
 import type { Env } from './core-utils';
-import { UserEntity, ChatBoardEntity } from "./entities";
+import { UserEntity, BriefEntity } from "./entities";
 import { ok, bad, notFound, isStr } from './core-utils';
-
+import type { User } from "@shared/types";
 export function userRoutes(app: Hono<{ Bindings: Env }>) {
-  app.get('/api/test', (c) => c.json({ success: true, data: { name: 'CF Workers Demo' }}));
-
-  // USERS
-  app.get('/api/users', async (c) => {
-    await UserEntity.ensureSeed(c.env);
-    const cq = c.req.query('cursor');
-    const lq = c.req.query('limit');
-    const page = await UserEntity.list(c.env, cq ?? null, lq ? Math.max(1, (Number(lq) | 0)) : undefined);
-    return ok(c, page);
+  // BRIEFS
+  app.get('/api/briefs', async (c) => {
+    await BriefEntity.ensureSeed(c.env);
+    const cat = c.req.query('category');
+    const page = await BriefEntity.list(c.env);
+    let items = page.items;
+    if (cat && cat !== 'All') {
+      items = items.filter(i => i.category === cat);
+    }
+    return ok(c, { items, next: page.next });
   });
-
-  app.post('/api/users', async (c) => {
-    const { name } = (await c.req.json()) as { name?: string };
-    if (!name?.trim()) return bad(c, 'name required');
-    return ok(c, await UserEntity.create(c.env, { id: crypto.randomUUID(), name: name.trim() }));
+  app.get('/api/briefs/:slug', async (c) => {
+    const slug = c.req.param('slug');
+    const brief = await BriefEntity.findBySlug(c.env, slug);
+    if (!brief) return notFound(c, 'Brief not found');
+    return ok(c, brief);
   });
-
-  // CHATS
-  app.get('/api/chats', async (c) => {
-    await ChatBoardEntity.ensureSeed(c.env);
-    const cq = c.req.query('cursor');
-    const lq = c.req.query('limit');
-    const page = await ChatBoardEntity.list(c.env, cq ?? null, lq ? Math.max(1, (Number(lq) | 0)) : undefined);
-    return ok(c, page);
+  // USER PROFILE
+  app.get('/api/user/:id', async (c) => {
+    const user = new UserEntity(c.env, c.req.param('id'));
+    if (!await user.exists()) return notFound(c);
+    return ok(c, await user.getState());
   });
-
-  app.post('/api/chats', async (c) => {
-    const { title } = (await c.req.json()) as { title?: string };
-    if (!title?.trim()) return bad(c, 'title required');
-    const created = await ChatBoardEntity.create(c.env, { id: crypto.randomUUID(), title: title.trim(), messages: [] });
-    return ok(c, { id: created.id, title: created.title });
-  });
-
-  // MESSAGES
-  app.get('/api/chats/:chatId/messages', async (c) => {
-    const chat = new ChatBoardEntity(c.env, c.req.param('chatId'));
-    if (!await chat.exists()) return notFound(c, 'chat not found');
-    return ok(c, await chat.listMessages());
-  });
-
-  app.post('/api/chats/:chatId/messages', async (c) => {
-    const chatId = c.req.param('chatId');
-    const { userId, text } = (await c.req.json()) as { userId?: string; text?: string };
-    if (!isStr(userId) || !text?.trim()) return bad(c, 'userId and text required');
-    const chat = new ChatBoardEntity(c.env, chatId);
-    if (!await chat.exists()) return notFound(c, 'chat not found');
-    return ok(c, await chat.sendMessage(userId, text.trim()));
-  });
-
-  // DELETE: Users
-  app.delete('/api/users/:id', async (c) => ok(c, { id: c.req.param('id'), deleted: await UserEntity.delete(c.env, c.req.param('id')) }));
-
-  app.post('/api/users/deleteMany', async (c) => {
-    const { ids } = (await c.req.json()) as { ids?: string[] };
-    const list = ids?.filter(isStr) ?? [];
-    if (list.length === 0) return bad(c, 'ids required');
-    return ok(c, { deletedCount: await UserEntity.deleteMany(c.env, list), ids: list });
-  });
-
-  // DELETE: Chats
-  app.delete('/api/chats/:id', async (c) => ok(c, { id: c.req.param('id'), deleted: await ChatBoardEntity.delete(c.env, c.req.param('id')) }));
-
-  app.post('/api/chats/deleteMany', async (c) => {
-    const { ids } = (await c.req.json()) as { ids?: string[] };
-    const list = ids?.filter(isStr) ?? [];
-    if (list.length === 0) return bad(c, 'ids required');
-    return ok(c, { deletedCount: await ChatBoardEntity.deleteMany(c.env, list), ids: list });
+  app.post('/api/user', async (c) => {
+    const body = await c.req.json() as Partial<User>;
+    if (!body.email) return bad(c, 'Email required');
+    let user = await UserEntity.findByEmail(c.env, body.email);
+    if (user) {
+      const entity = new UserEntity(c.env, user.id);
+      await entity.patch(body);
+      return ok(c, await entity.getState());
+    } else {
+      const newUser: User = {
+        id: crypto.randomUUID(),
+        email: body.email,
+        name: body.name || 'Nexus User',
+        tier: body.tier || 'Free'
+      };
+      await UserEntity.create(c.env, newUser);
+      return ok(c, newUser);
+    }
   });
 }
