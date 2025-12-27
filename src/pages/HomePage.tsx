@@ -1,12 +1,19 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowRight, BookOpen, Globe, TrendingUp, CheckCircle2, Star, ShieldCheck } from 'lucide-react';
+import { useQuery } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { MOCK_POSTS } from '@/shared/mock-data';
+import { Skeleton } from '@/components/ui/skeleton';
+import { api } from '@/lib/api-client';
+import type { Brief } from '@shared/types';
 export function HomePage() {
-  const featured = MOCK_POSTS.slice(0, 3);
+  const { data, isLoading } = useQuery<{ items: Brief[] }>({
+    queryKey: ['featured-briefs'],
+    queryFn: () => api<{ items: Brief[] }>('/api/briefs'),
+  });
+  const featured = data?.items.slice(0, 3) || [];
   return (
     <div className="flex flex-col">
       <section className="relative overflow-hidden bg-slate-950 py-24 md:py-32">
@@ -44,7 +51,7 @@ export function HomePage() {
           </div>
         </div>
       </section>
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-24">
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-24 md:py-32">
         <div className="flex flex-col md:flex-row justify-between items-end mb-12 gap-6">
           <div className="space-y-4">
             <h2 className="text-3xl md:text-4xl font-bold font-display">Latest Intelligence Briefs</h2>
@@ -55,26 +62,36 @@ export function HomePage() {
           </Button>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-          {featured.map((post) => (
-            <Card key={post.id} className="group flex flex-col hover:shadow-lg transition-shadow border-slate-200 dark:border-slate-800">
-              <CardHeader className="space-y-4 flex-1">
-                <div className="flex justify-between items-start">
-                  <Badge variant="secondary" className="bg-slate-100 text-slate-900">{post.category}</Badge>
-                  {post.isPremium && <Badge variant="outline" className="text-amber-600 border-amber-200 bg-amber-50">Premium</Badge>}
-                </div>
-                <CardTitle className="text-xl leading-tight group-hover:text-primary transition-colors">
-                  <Link to={`/hub/${post.slug}`}>{post.title}</Link>
-                </CardTitle>
-                <CardDescription className="line-clamp-3 leading-relaxed">
-                  {post.summary}
-                </CardDescription>
-              </CardHeader>
-              <CardFooter className="pt-0 border-t mt-4 py-4 flex justify-between items-center">
-                <span className="text-xs text-muted-foreground">{post.date}</span>
-                <Link to={`/hub/${post.slug}`} className="text-sm font-semibold flex items-center text-primary">Read <ArrowRight className="ml-1 w-3 h-3" /></Link>
-              </CardFooter>
-            </Card>
-          ))}
+          {isLoading ? (
+            Array.from({ length: 3 }).map((_, i) => (
+              <div key={i} className="space-y-4">
+                <Skeleton className="h-48 w-full rounded-xl" />
+                <Skeleton className="h-4 w-3/4" />
+                <Skeleton className="h-4 w-1/2" />
+              </div>
+            ))
+          ) : (
+            featured.map((post) => (
+              <Card key={post.id} className="group flex flex-col hover:shadow-lg transition-shadow border-slate-200 dark:border-slate-800">
+                <CardHeader className="space-y-4 flex-1">
+                  <div className="flex justify-between items-start">
+                    <Badge variant="secondary" className="bg-slate-100 text-slate-900">{post.category}</Badge>
+                    {post.isPremium && <Badge variant="outline" className="text-amber-600 border-amber-200 bg-amber-50">Premium</Badge>}
+                  </div>
+                  <CardTitle className="text-xl leading-tight group-hover:text-primary transition-colors">
+                    <Link to={`/hub/${post.slug}`}>{post.title}</Link>
+                  </CardTitle>
+                  <CardDescription className="line-clamp-3 leading-relaxed">
+                    {post.summary}
+                  </CardDescription>
+                </CardHeader>
+                <CardFooter className="pt-0 border-t mt-4 py-4 flex justify-between items-center">
+                  <span className="text-xs text-muted-foreground">{post.date}</span>
+                  <Link to={`/hub/${post.slug}`} className="text-sm font-semibold flex items-center text-primary">Read <ArrowRight className="ml-1 w-3 h-3" /></Link>
+                </CardFooter>
+              </Card>
+            ))
+          )}
         </div>
       </section>
       <section className="bg-slate-900 text-white">
