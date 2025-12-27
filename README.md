@@ -1,6 +1,6 @@
 # Cloudflare Workers React Starter Template
 
-[![Deploy to Cloudflare][cloudflarebutton]]
+[![Deploy to Cloudflare][![Deploy to Cloudflare](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https://github.com/academiaplus-edu/nexus-intelligence-platform)]
 
 A production-ready full-stack starter template for Cloudflare Workers featuring a React frontend, Hono backend, and Durable Objects for scalable entity storage. Perfect for building real-time apps like chat systems, with built-in users, chat boards, and messaging.
 
@@ -71,7 +71,7 @@ bun deploy
 
 Or use the [Cloudflare Dashboard](https://dash.cloudflare.com/).
 
-[![Deploy to Cloudflare][cloudflarebutton]]
+[![Deploy to Cloudflare][![Deploy to Cloudflare](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https://github.com/academiaplus-edu/nexus-intelligence-platform)]
 
 **Custom Domain**: After deployment, add a custom domain in Wrangler or Dashboard.
 
