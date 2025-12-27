@@ -1,43 +1,13 @@
 import React from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
-import { Calendar, ArrowLeft, Lock, ChevronRight, Share2, Bookmark, Download, FileJson, Clock } from 'lucide-react';
+import { Calendar, User, Clock, ArrowLeft, Lock, ChevronRight, Share2, Printer, Bookmark } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Skeleton } from '@/components/ui/skeleton';
+import { MOCK_POSTS } from '@/lib/mock-data';
 import { cn } from '@/lib/utils';
-import { useAuthStore } from '@/store/use-auth-store';
-import { useLibraryStore } from '@/store/use-library-store';
-import { toast } from 'sonner';
-import { api } from '@/lib/api-client';
-import type { Brief } from '@shared/types';
 export function ArticlePage() {
   const { slug } = useParams();
-  const isAuthenticated = useAuthStore(s => s.isAuthenticated);
-  const userTier = useAuthStore(s => s.user?.tier);
-  const toggleSave = useLibraryStore(s => s.toggleSave);
-  const savedIds = useLibraryStore(s => s.savedIds);
-  const { data: post, isLoading } = useQuery<Brief>({
-    queryKey: ['brief', slug],
-    queryFn: () => api<Brief>(`/api/briefs/${slug}`),
-    enabled: !!slug,
-  });
-  const isSaved = post ? savedIds.includes(post.id) : false;
-  if (isLoading) {
-    return (
-      <div className="max-w-7xl mx-auto px-4 py-20">
-        <div className="max-w-4xl mx-auto space-y-8">
-          <Skeleton className="h-8 w-32" />
-          <Skeleton className="h-12 w-3/4" />
-          <div className="flex gap-4">
-            <Skeleton className="h-6 w-24" />
-            <Skeleton className="h-6 w-24" />
-          </div>
-          <Skeleton className="h-64 w-full" />
-        </div>
-      </div>
-    );
-  }
+  const post = MOCK_POSTS.find((p) => p.slug === slug);
   if (!post) {
     return (
       <div className="max-w-7xl mx-auto px-4 py-20 text-center">
@@ -46,40 +16,22 @@ export function ArticlePage() {
       </div>
     );
   }
-  const isUnlocked = !post.isPremium || (isAuthenticated && userTier && userTier !== 'Free');
-  const handleDownload = (format: 'PDF' | 'Excel') => {
-    toast.info(`Preparing ${format} export...`);
-    setTimeout(() => {
-      toast.success(`${format} downloaded successfully.`);
-    }, 1500);
-  };
-  const handleToggleSave = () => {
-    toggleSave(post.id);
-    toast.success(isSaved ? 'Removed from saved reports' : 'Saved to library');
-  };
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
       <div className="py-8 md:py-12">
         <div className="max-w-4xl mx-auto space-y-12">
+          {/* Breadcrumbs & Actions */}
           <div className="flex justify-between items-center">
             <Link to="/hub" className="flex items-center text-sm text-muted-foreground hover:text-primary transition-colors">
               <ArrowLeft className="mr-2 w-4 h-4" /> Back to Intelligence Hub
             </Link>
             <div className="flex items-center gap-2">
-              <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => toast.success('Link copied to clipboard')}><Share2 className="h-4 w-4" /></Button>
-              <Button
-                variant={isSaved ? "secondary" : "ghost"}
-                size="icon"
-                className={cn("h-8 w-8", isSaved && "text-primary")}
-                onClick={handleToggleSave}
-              >
-                <Bookmark className={cn("h-4 w-4", isSaved && "fill-current")} />
-              </Button>
-              {isUnlocked && (
-                 <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleDownload('PDF')}><Download className="h-4 w-4" /></Button>
-              )}
+              <Button variant="ghost" size="icon" className="h-8 w-8"><Share2 className="h-4 w-4" /></Button>
+              <Button variant="ghost" size="icon" className="h-8 w-8"><Printer className="h-4 w-4" /></Button>
+              <Button variant="ghost" size="icon" className="h-8 w-8"><Bookmark className="h-4 w-4" /></Button>
             </div>
           </div>
+          {/* Header */}
           <header className="space-y-6">
             <div className="flex items-center gap-2">
               <Badge variant="secondary" className="px-3 py-1">{post.category}</Badge>
@@ -97,6 +49,7 @@ export function ArticlePage() {
               <div className="flex items-center gap-2"><Clock className="w-4 h-4" /> {post.readTime}</div>
             </div>
           </header>
+          {/* Content Area */}
           <article className="relative">
             <div className="prose prose-slate dark:prose-invert max-w-none">
               <p className="text-xl font-medium leading-relaxed mb-8">
@@ -104,26 +57,17 @@ export function ArticlePage() {
               </p>
               <div className={cn(
                 "space-y-6 transition-all duration-700",
-                !isUnlocked && "blur-[12px] select-none pointer-events-none opacity-40"
+                post.isPremium && "blur-[8px] select-none pointer-events-none opacity-40"
               )}>
                 {post.fullContent.split('. ').map((para, i) => (
                   <p key={i} className="text-lg leading-relaxed text-slate-700 dark:text-slate-300">
-                    {para}. {para.length > 50 && "Further granular research by the Nexus Intelligence team indicates that the underlying structural shifts are primarily driven by changing regulatory landscapes and capital reallocation toward sustainable infrastructure."}
+                    {para}. {para.length > 50 && "This extended analysis explores the underlying socio-economic drivers affecting the current landscape. We examine both quantitative data sets from institutional sources and qualitative insights gathered from field experts."}
                   </p>
                 ))}
-                {isUnlocked && (
-                  <div className="mt-12 p-8 bg-slate-50 dark:bg-slate-900 rounded-3xl border border-dashed border-slate-300 dark:border-slate-700">
-                    <h3 className="text-xl font-bold mb-4 flex items-center gap-2"><FileJson className="w-5 h-5 text-primary" /> Technical Addendum</h3>
-                    <p className="text-muted-foreground text-sm mb-6">Access the full data set including Excel models, stakeholder maps, and regulatory risk scores.</p>
-                    <div className="flex flex-wrap gap-4">
-                      <Button size="sm" className="bg-slate-900 text-white" onClick={() => handleDownload('Excel')}><Download className="w-4 h-4 mr-2" /> Download Excel Model</Button>
-                      <Button size="sm" variant="outline" onClick={() => handleDownload('PDF')}><Download className="w-4 h-4 mr-2" /> Export Technical PDF</Button>
-                    </div>
-                  </div>
-                )}
               </div>
             </div>
-            {!isUnlocked && (
+            {/* Lock Overlay */}
+            {post.isPremium && (
               <div className="absolute inset-x-0 top-32 bottom-0 flex justify-center pt-24 pb-12 z-10 bg-gradient-to-t from-background via-transparent to-transparent">
                 <div className="max-w-lg w-full h-fit bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-8 shadow-2xl space-y-6 text-center animate-slide-up">
                   <div className="mx-auto w-16 h-16 bg-amber-50 dark:bg-amber-950/30 rounded-full flex items-center justify-center">
@@ -140,7 +84,7 @@ export function ArticlePage() {
                       <Link to="/pricing">Unlock Access Now</Link>
                     </Button>
                     <p className="text-sm">
-                      Need assistance? <span className="font-bold underline cursor-pointer">Contact support</span>
+                      Already a member? <Link to="#" className="font-bold underline">Login</Link>
                     </p>
                   </div>
                   <div className="pt-6 border-t grid grid-cols-2 gap-4">
@@ -157,6 +101,22 @@ export function ArticlePage() {
               </div>
             )}
           </article>
+          {/* Related Footer */}
+          {!post.isPremium && (
+            <div className="border-t pt-12 mt-12">
+              <h3 className="text-lg font-bold mb-6">Key Takeaways</h3>
+              <ul className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <li className="flex gap-3 text-sm text-slate-600 dark:text-slate-400">
+                  <span className="w-1.5 h-1.5 rounded-full bg-primary mt-1.5 shrink-0" />
+                  Primary stakeholders are shifting toward regionalized clusters.
+                </li>
+                <li className="flex gap-3 text-sm text-slate-600 dark:text-slate-400">
+                  <span className="w-1.5 h-1.5 rounded-full bg-primary mt-1.5 shrink-0" />
+                  Regulatory friction is expected to peak in early Q4.
+                </li>
+              </ul>
+            </div>
+          )}
         </div>
       </div>
     </div>
