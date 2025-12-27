@@ -1,13 +1,20 @@
 import React from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { Calendar, User, Clock, ArrowLeft, Lock, ChevronRight, Share2, Printer, Bookmark } from 'lucide-react';
+import { Calendar, User, Clock, ArrowLeft, Lock, ChevronRight, Share2, Printer, Bookmark, Download, FileJson } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { MOCK_POSTS } from '@/lib/mock-data';
 import { cn } from '@/lib/utils';
+import { useAuthStore } from '@/store/use-auth-store';
+import { useLibraryStore } from '@/store/use-library-store';
+import { toast } from 'sonner';
 export function ArticlePage() {
   const { slug } = useParams();
   const post = MOCK_POSTS.find((p) => p.slug === slug);
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+  const user = useAuthStore((s) => s.user);
+  const toggleSave = useLibraryStore((s) => s.toggleSave);
+  const isSaved = useLibraryStore((s) => s.isSaved(post?.id ?? ''));
   if (!post) {
     return (
       <div className="max-w-7xl mx-auto px-4 py-20 text-center">
@@ -16,6 +23,19 @@ export function ArticlePage() {
       </div>
     );
   }
+  // Logic: Unlocked if NOT premium, OR if authenticated and tier allows.
+  // For demo, any tier (Academic/Industry/Enterprise) unlocks everything if they have it.
+  const isUnlocked = !post.isPremium || (isAuthenticated && user && user.tier !== 'Free');
+  const handleDownload = (format: 'PDF' | 'Excel') => {
+    toast.info(`Preparing ${format} export...`);
+    setTimeout(() => {
+      toast.success(`${format} downloaded successfully.`);
+    }, 1500);
+  };
+  const handleToggleSave = () => {
+    toggleSave(post.id);
+    toast.success(isSaved ? 'Removed from saved reports' : 'Saved to library');
+  };
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
       <div className="py-8 md:py-12">
@@ -26,9 +46,18 @@ export function ArticlePage() {
               <ArrowLeft className="mr-2 w-4 h-4" /> Back to Intelligence Hub
             </Link>
             <div className="flex items-center gap-2">
-              <Button variant="ghost" size="icon" className="h-8 w-8"><Share2 className="h-4 w-4" /></Button>
-              <Button variant="ghost" size="icon" className="h-8 w-8"><Printer className="h-4 w-4" /></Button>
-              <Button variant="ghost" size="icon" className="h-8 w-8"><Bookmark className="h-4 w-4" /></Button>
+              <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => toast.success('Link copied to clipboard')}><Share2 className="h-4 w-4" /></Button>
+              <Button 
+                variant={isSaved ? "secondary" : "ghost"} 
+                size="icon" 
+                className={cn("h-8 w-8", isSaved && "text-primary")}
+                onClick={handleToggleSave}
+              >
+                <Bookmark className={cn("h-4 w-4", isSaved && "fill-current")} />
+              </Button>
+              {isUnlocked && (
+                 <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleDownload('PDF')}><Download className="h-4 w-4" /></Button>
+              )}
             </div>
           </div>
           {/* Header */}
@@ -57,17 +86,27 @@ export function ArticlePage() {
               </p>
               <div className={cn(
                 "space-y-6 transition-all duration-700",
-                post.isPremium && "blur-[8px] select-none pointer-events-none opacity-40"
+                !isUnlocked && "blur-[10px] select-none pointer-events-none opacity-40"
               )}>
                 {post.fullContent.split('. ').map((para, i) => (
                   <p key={i} className="text-lg leading-relaxed text-slate-700 dark:text-slate-300">
-                    {para}. {para.length > 50 && "This extended analysis explores the underlying socio-economic drivers affecting the current landscape. We examine both quantitative data sets from institutional sources and qualitative insights gathered from field experts."}
+                    {para}. {para.length > 50 && "Further granular research by the Nexus Intelligence team indicates that the underlying structural shifts are primarily driven by changing regulatory landscapes and capital reallocation toward sustainable infrastructure. Strategic decision-makers are encouraged to monitor tier-2 supplier risks in emerging corridors."}
                   </p>
                 ))}
+                {isUnlocked && (
+                  <div className="mt-12 p-8 bg-slate-50 dark:bg-slate-900 rounded-3xl border border-dashed border-slate-300 dark:border-slate-700">
+                    <h3 className="text-xl font-bold mb-4 flex items-center gap-2"><FileJson className="w-5 h-5 text-primary" /> Technical Addendum</h3>
+                    <p className="text-muted-foreground text-sm mb-6">Access the full data set including Excel models, stakeholder maps, and regulatory risk scores.</p>
+                    <div className="flex flex-wrap gap-4">
+                      <Button size="sm" className="bg-slate-900 text-white" onClick={() => handleDownload('Excel')}><Download className="w-4 h-4 mr-2" /> Download Excel Model</Button>
+                      <Button size="sm" variant="outline" onClick={() => handleDownload('PDF')}><Download className="w-4 h-4 mr-2" /> Export Technical PDF</Button>
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
             {/* Lock Overlay */}
-            {post.isPremium && (
+            {!isUnlocked && (
               <div className="absolute inset-x-0 top-32 bottom-0 flex justify-center pt-24 pb-12 z-10 bg-gradient-to-t from-background via-transparent to-transparent">
                 <div className="max-w-lg w-full h-fit bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-8 shadow-2xl space-y-6 text-center animate-slide-up">
                   <div className="mx-auto w-16 h-16 bg-amber-50 dark:bg-amber-950/30 rounded-full flex items-center justify-center">
@@ -83,9 +122,11 @@ export function ArticlePage() {
                     <Button size="lg" className="w-full bg-slate-900 text-white hover:bg-slate-800 py-6" asChild>
                       <Link to="/pricing">Unlock Access Now</Link>
                     </Button>
-                    <p className="text-sm">
-                      Already a member? <Link to="#" className="font-bold underline">Login</Link>
-                    </p>
+                    {!isAuthenticated && (
+                       <p className="text-sm">
+                        Already a member? <span className="font-bold underline cursor-pointer">Login</span>
+                      </p>
+                    )}
                   </div>
                   <div className="pt-6 border-t grid grid-cols-2 gap-4">
                     <div className="text-left">
@@ -101,22 +142,6 @@ export function ArticlePage() {
               </div>
             )}
           </article>
-          {/* Related Footer */}
-          {!post.isPremium && (
-            <div className="border-t pt-12 mt-12">
-              <h3 className="text-lg font-bold mb-6">Key Takeaways</h3>
-              <ul className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <li className="flex gap-3 text-sm text-slate-600 dark:text-slate-400">
-                  <span className="w-1.5 h-1.5 rounded-full bg-primary mt-1.5 shrink-0" />
-                  Primary stakeholders are shifting toward regionalized clusters.
-                </li>
-                <li className="flex gap-3 text-sm text-slate-600 dark:text-slate-400">
-                  <span className="w-1.5 h-1.5 rounded-full bg-primary mt-1.5 shrink-0" />
-                  Regulatory friction is expected to peak in early Q4.
-                </li>
-              </ul>
-            </div>
-          )}
         </div>
       </div>
     </div>

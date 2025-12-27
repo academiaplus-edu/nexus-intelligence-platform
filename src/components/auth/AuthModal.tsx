@@ -11,7 +11,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { ShieldCheck, Mail, Lock, Loader2 } from 'lucide-react';
+import { ShieldCheck, Mail, Lock } from 'lucide-react';
 import { toast } from 'sonner';
 interface AuthModalProps {
   isOpen: boolean;
@@ -25,95 +25,77 @@ export function AuthModal({ isOpen, onOpenChange, defaultTab = 'login' }: AuthMo
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
-    // Simulate secure API authentication
+    // Simulate API call
     setTimeout(() => {
       login(email || 'demo@nexus.com');
       setIsLoading(false);
       onOpenChange(false);
-      toast.success('Access Granted. Welcome to the Nexus Intelligence Platform.', {
-        description: 'You now have access to your personalized dashboard.',
-      });
-    }, 1500);
+      toast.success('Successfully authenticated. Welcome to Nexus Intelligence.');
+    }, 1000);
   };
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[400px] bg-background/98 backdrop-blur-2xl border-slate-200 dark:border-slate-800 shadow-2xl p-8 rounded-[2rem]">
-        <DialogHeader className="flex flex-col items-center space-y-3 pb-6">
-          <div className="p-4 bg-primary/10 rounded-[1.5rem] text-primary shadow-inner">
-            <ShieldCheck className="w-10 h-10" />
+      <DialogContent className="sm:max-w-[400px] bg-background/95 backdrop-blur-xl border-slate-200 dark:border-slate-800">
+        <DialogHeader className="flex flex-col items-center space-y-2 pb-4">
+          <div className="p-3 bg-primary/10 rounded-2xl text-primary">
+            <ShieldCheck className="w-8 h-8" />
           </div>
-          <DialogTitle className="text-3xl font-display font-bold tracking-tight">Nexus Access</DialogTitle>
-          <DialogDescription className="text-center text-muted-foreground">
-            Professional intelligence for academic and industry decision makers.
+          <DialogTitle className="text-2xl font-display font-bold">Nexus Access</DialogTitle>
+          <DialogDescription>
+            Enter your credentials to access the hub.
           </DialogDescription>
         </DialogHeader>
         <Tabs defaultValue={defaultTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-2 mb-8 bg-slate-100 dark:bg-slate-900 rounded-xl p-1">
-            <TabsTrigger value="login" className="rounded-lg py-2">Login</TabsTrigger>
-            <TabsTrigger value="signup" className="rounded-lg py-2">Sign Up</TabsTrigger>
+          <TabsList className="grid w-full grid-cols-2 mb-6">
+            <TabsTrigger value="login">Login</TabsTrigger>
+            <TabsTrigger value="signup">Sign Up</TabsTrigger>
           </TabsList>
           <form onSubmit={handleSubmit}>
-            <TabsContent value="login" className="space-y-5">
+            <TabsContent value="login" className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="email" className="text-sm font-semibold">Work Email</Label>
-                <div className="relative group">
-                  <Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground group-focus-within:text-primary transition-colors" />
-                  <Input
-                    id="email"
-                    placeholder="name@company.com"
-                    className="pl-10 h-12 bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-800 rounded-xl"
-                    type="email"
+                <Label htmlFor="email">Work Email</Label>
+                <div className="relative">
+                  <Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                  <Input 
+                    id="email" 
+                    placeholder="name@company.com" 
+                    className="pl-10" 
+                    type="email" 
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    required
-                  />
-                </div>
-              </div>
-              <div className="space-y-2">
-                <div className="flex justify-between">
-                  <Label htmlFor="password" title="Password" className="text-sm font-semibold">Password</Label>
-                  <span className="text-xs text-primary font-medium cursor-pointer hover:underline">Forgot?</span>
-                </div>
-                <div className="relative group">
-                  <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground group-focus-within:text-primary transition-colors" />
-                  <Input 
-                    id="password" 
-                    type="password" 
-                    className="pl-10 h-12 bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-800 rounded-xl" 
                     required 
                   />
                 </div>
               </div>
-              <Button type="submit" className="w-full h-12 rounded-xl text-lg font-bold shadow-lg shadow-primary/20" disabled={isLoading}>
-                {isLoading ? (
-                  <><Loader2 className="mr-2 h-5 w-5 animate-spin" /> Verifying...</>
-                ) : (
-                  "Login to Dashboard"
-                )}
+              <div className="space-y-2">
+                <Label htmlFor="password">Password</Label>
+                <div className="relative">
+                  <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                  <Input id="password" type="password" className="pl-10" required />
+                </div>
+              </div>
+              <Button type="submit" className="w-full h-11" disabled={isLoading}>
+                {isLoading ? "Authenticating..." : "Login to Dashboard"}
               </Button>
             </TabsContent>
-            <TabsContent value="signup" className="space-y-5">
-              <div className="space-y-2">
-                <Label htmlFor="name" className="text-sm font-semibold">Full Name</Label>
-                <Input id="name" placeholder="John Doe" className="h-12 bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-800 rounded-xl" required />
+            <TabsContent value="signup" className="space-y-4">
+               <div className="space-y-2">
+                <Label htmlFor="name">Full Name</Label>
+                <Input id="name" placeholder="John Doe" required />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="s-email" className="text-sm font-semibold">Work Email</Label>
-                <Input id="s-email" placeholder="name@company.com" type="email" className="h-12 bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-800 rounded-xl" required />
+                <Label htmlFor="s-email">Work Email</Label>
+                <Input id="s-email" placeholder="name@company.com" type="email" required />
               </div>
-              <Button type="submit" className="w-full h-12 rounded-xl text-lg font-bold shadow-lg shadow-primary/20" disabled={isLoading}>
-                {isLoading ? (
-                  <><Loader2 className="mr-2 h-5 w-5 animate-spin" /> Creating Account...</>
-                ) : (
-                  "Create Free Account"
-                )}
+              <Button type="submit" className="w-full h-11" disabled={isLoading}>
+                {isLoading ? "Creating Account..." : "Create Free Account"}
               </Button>
             </TabsContent>
           </form>
         </Tabs>
-        <div className="text-center pt-8 border-t border-slate-100 dark:border-slate-800 mt-4">
-          <p className="text-xs text-muted-foreground leading-relaxed">
-            By continuing, you agree to our <span className="text-primary font-medium underline cursor-pointer">Terms of Service</span> and <span className="text-primary font-medium underline cursor-pointer">Privacy Policy</span>.
+        <div className="text-center pt-4">
+          <p className="text-xs text-muted-foreground">
+            By continuing, you agree to our <span className="underline cursor-pointer">Terms of Service</span> and <span className="underline cursor-pointer">Privacy Policy</span>.
           </p>
         </div>
       </DialogContent>

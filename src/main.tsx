@@ -6,31 +6,19 @@ import { createRoot } from 'react-dom/client'
 import {
   createBrowserRouter,
   RouterProvider,
-  Outlet,
 } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { RouteErrorBoundary } from '@/components/RouteErrorBoundary';
-import { SiteHeader } from '@/components/layout/SiteHeader';
-import { SiteFooter } from '@/components/layout/SiteFooter';
+import { RootLayout } from '@/components/layout/RootLayout';
 import '@/index.css'
 import { HomePage } from '@/pages/HomePage'
 import { HubPage } from '@/pages/HubPage'
 import { ArticlePage } from '@/pages/ArticlePage'
 import { ServicesPage } from '@/pages/ServicesPage'
 import { PricingPage } from '@/pages/PricingPage'
+import { DashboardPage } from '@/pages/DashboardPage'
 const queryClient = new QueryClient();
-function RootLayout() {
-  return (
-    <div className="flex flex-col min-h-screen">
-      <SiteHeader />
-      <main className="flex-1">
-        <Outlet />
-      </main>
-      <SiteFooter />
-    </div>
-  );
-}
 const router = createBrowserRouter([
   {
     path: "/",
@@ -42,6 +30,7 @@ const router = createBrowserRouter([
       { path: "hub/:slug", element: <ArticlePage /> },
       { path: "services", element: <ServicesPage /> },
       { path: "pricing", element: <PricingPage /> },
+      { path: "dashboard", element: <DashboardPage /> },
     ]
   },
 ]);
